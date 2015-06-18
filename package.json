@@ -1,0 +1,19 @@
+{
+  "name": "chathops-client",
+  "version": "1.0.0",
+  "description": "Client interface and experience for server, desktop, and devices",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chathops/chathops-client"
+  },
+  "author": "ChatHops contributors",
+  "license": "Apache License 2.0",
+  "bugs": {
+    "url": "https://github.com/chathops/chathops-client/issues"
+  },
+  "homepage": "https://github.com/chathops/chathops-client"
+}
