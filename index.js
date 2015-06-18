@@ -1,9 +1,12 @@
 var express = require('express');
 var app = express();
+var router = express.Router();
 
-app.get('/', function (req, res) {
-  res.send('This is the client endpoint');
+router.get('/', function(req, res) {
+    res.send('This is the client endpoint');  
 });
+
+app.use('/client', router);
 
 var port = process.env.PORT || 7000;
 var server = app.listen(port , function () {
