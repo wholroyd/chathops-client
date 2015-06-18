@@ -4,7 +4,7 @@
   "description": "Client interface and experience for server, desktop, and devices",
   "main": "index.js",
   "scripts": {
-    "start" : "node index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/chathops/chathops-client/issues"
   },
-  "homepage": "https://github.com/chathops/chathops-client"
+  "homepage": "https://github.com/chathops/chathops-client",
+  "dependencies": {
+    "express": "^4.12.4"
+  }
 }
