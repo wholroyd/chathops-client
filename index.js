@@ -9,10 +9,7 @@ module.exports = (function() {
     app.use('/assets', express.static('assets'));
 
     app.get('/', function(req, res) { 
-        con.handlebars(__dirname + '/views/index.hbs', function(err, html){ 
-            res.write(html);
-            res.end();
-        });
+        res.send('This is the client endpoint');  
     });
     
     // -- register 404 handler
