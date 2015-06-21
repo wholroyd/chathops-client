@@ -2,9 +2,9 @@
   "name": "chathops-client",
   "version": "1.0.0",
   "description": "Client interface and experience for server, desktop, and devices",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/chathops/chathops-client",
   "dependencies": {
+    "consolidate": "^0.13.1",
     "express": "^4.12.4"
   }
 }
