@@ -31,6 +31,9 @@ module.exports = (function() {
         }
     });
     
+    // console.log("### Routing from chathops-client (module)");
+    // console.log(app._router.stack);
+    
     return app;
     
 })();
