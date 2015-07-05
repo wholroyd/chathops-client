@@ -18,7 +18,22 @@
   },
   "homepage": "https://github.com/chathops/chathops-client",
   "dependencies": {
-    "consolidate": "^0.13.1",
     "express": "^4.12.4"
+  },
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "del": "^1.2.0",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-connect": "^2.2.0",
+    "gulp-less": "^3.0.3",
+    "gulp-minify-css": "^1.2.0",
+    "gulp-minify-html": "^1.0.3",
+    "gulp-rename": "^1.2.2",
+    "gulp-rimraf": "^0.1.1",
+    "gulp-uglify": "^1.2.0",
+    "gulp-usemin": "^0.3.11",
+    "gulp-watch": "^4.2.4",
+    "mocha": "^2.2.5"
   }
 }
