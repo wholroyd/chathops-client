@@ -43,13 +43,14 @@ To get everything running on your machine...
 3. npm install bower -g
 4. npm install electron -g
 5. npm install typescript -g
-6. bower install
+6. npm install tsd -g
+7. bower install
 
 To verify everything should be working...
 
-7. gulp build
-8. node test
+1. gulp build
+2. node test
 
 To keep an eye on everything while developing...
 
-9. gulp
+- gulp

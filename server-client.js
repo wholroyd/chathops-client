@@ -26,9 +26,10 @@ electron.on('ready', function () {
     mainWindow = new browserWindow({
         width: 800,
         height: 600,
-        frame: false
+        frame: true
     });
-    mainWindow.loadUrl('http://localhost:' + app.locals.port + '/');
+
+    mainWindow.loadUrl(__dirname + '/src/index.html');
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function () {

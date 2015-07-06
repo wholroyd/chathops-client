@@ -3,6 +3,9 @@
  */
 
 // This was borrowed from the chathops-ui project and has not been modified for this project/repository
+// There are more things for Angular2 and TypeScript that can be found in:
+// https://github.com/AngularShowcase/angular2-sample-app/blob/master/gulpfile.js
+
 
 var gulp = require('gulp'),
     usemin = require('gulp-usemin'),

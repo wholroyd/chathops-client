@@ -8,7 +8,7 @@ var Platforms;
             this.usernameOrKey = usernameOrKey;
             this.passwordOrSecret = passwordOrSecret;
         }
-        Platform.prototype.SetToken = function (token, tokenRefresh, tokenExpiration) {
+        Platform.prototype.setToken = function (token, tokenRefresh, tokenExpiration) {
             this.token = token;
             this.tokenRefresh = tokenRefresh;
             this.tokenExpiration = tokenExpiration;

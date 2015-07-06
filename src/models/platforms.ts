@@ -1,4 +1,4 @@
-declare module Platforms {
+module Platforms {
     export class Platform {
 
         type: PlatformType;
@@ -20,7 +20,7 @@ declare module Platforms {
             this.passwordOrSecret = passwordOrSecret;
         }
 
-        SetToken(token: string, tokenRefresh: string, tokenExpiration: string) {
+        public setToken(token: string, tokenRefresh: string, tokenExpiration: string) {
             this.token = token;
             this.tokenRefresh = tokenRefresh;
             this.tokenExpiration = tokenExpiration;

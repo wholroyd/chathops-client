@@ -1,0 +1,30 @@
+{
+  "version": "v4",
+  "repo": "borisyankov/DefinitelyTyped",
+  "ref": "master",
+  "path": "typings",
+  "bundle": "typings/tsd.d.ts",
+  "installed": {
+    "jquery/jquery.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "angular2/angular2.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "rx/rx-lite.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "es6-promise/es6-promise.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "rx/rx.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "github-electron/github-electron.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    },
+    "node/node.d.ts": {
+      "commit": "2fe8a6fda29c3340a5e5672b1809a84c88729a30"
+    }
+  }
+}
