@@ -22,9 +22,9 @@ module.exports = (function() {
     // -- register 500 handler (dev)
     app.use(function (err, req, res, next) {
         if (process.env.ENVIRONMENT == 'production') {
-            res.status(500).send('An error has occured.');
+            res.status(500).send('An error has occurred.');
         } else {
-            res.status(err.status).send('An error has occured:', {
+            res.status(err.status).send('An error has occurred:', {
                 message: err.message,
                 error: err
             });

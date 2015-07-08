@@ -5,7 +5,7 @@ This is the client interface that users will experience on the web, desktop, or 
 
 ## Architecture
 
-The client app will be using Ember, React, Angular, or jQuery UI - which has not been decided yet. While Express is 
+The client app will utilize Angular2 - which is not production ready just yet, but is really close. While Express is 
 being used to serve up the app, it's only for the entry file (index.html), and it's only for server-side hosting. There 
 is no guarantee that we would be able to get Express to reliably run locally on all desktops or phones. Keeping to 
 client-only technology is explicitly required, unless it's being hosted elsewhere and being remotely accessed.
@@ -45,6 +45,7 @@ To get everything running on your machine...
 5. npm install typescript -g
 6. npm install tsd -g
 7. bower install
+8. tsd install
 
 To verify everything should be working...
 

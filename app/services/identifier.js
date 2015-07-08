@@ -1,3 +1,4 @@
+/// <reference path="../../typings/bug-typescript-2953.d.ts" />
 /// <reference path="../../typings/node/node.d.ts" />
 var crypto = require("crypto");
 var os = require("os");

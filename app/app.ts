@@ -12,7 +12,7 @@ import {Profile} from './components/profile/profile';
 import {Manage} from './components/manage/manage';
 
 @Component({ selector: 'app' })
-@View({ template: '<h1>Hello {{ name }}</h1>' })
+@View({ template: '<h1>{{ message }}</h1><br><p>Stage: {{ stage }}</p><br><input (keyup)="advance()">' })
 @RouteConfig([
     { path: '/', redirectTo: '/authentication'},
     { path: '/authentication', component: Authentication, as: 'authentication' },
@@ -20,10 +20,27 @@ import {Manage} from './components/manage/manage';
     { path: '/settings', component: Settings, as: 'settings' },
 ])
 class App {
-    name: string;
+    message: string;
+    stage: number;
 
     constructor() {
-        this.name = 'Alice';
+        this.message = 'Welcome to ChatHops';
+        this.stage = 0;
+    }
+
+    public advance() {
+        switch(this.stage) {
+            case 0:
+                this.message = "stage 0";
+                break;
+            case 1:
+                this.message = "stage 1";
+                break;
+            default:
+                this.message = "stage 2";
+                break;
+        }
+        this.stage++;
     }
 }
 

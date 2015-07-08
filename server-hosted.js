@@ -2,7 +2,7 @@ var express = require('express');
 var app = express();
 
 // Load all of the app(s)
-app.use('/', require('./src/index.js'));
+app.use('/', require('./app/index.js'));
 
 // Start the server
 var server = app.listen(process.env.PORT || 7000);

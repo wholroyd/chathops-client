@@ -18,11 +18,26 @@ var settings_1 = require('./components/settings/settings');
 var manage_1 = require('./components/manage/manage');
 var App = (function () {
     function App() {
-        this.name = 'Alice';
+        this.message = 'Welcome to ChatHops';
+        this.stage = 0;
     }
+    App.prototype.advance = function () {
+        switch (this.stage) {
+            case 0:
+                this.message = "stage 0";
+                break;
+            case 1:
+                this.message = "stage 1";
+                break;
+            default:
+                this.message = "stage 2";
+                break;
+        }
+        this.stage++;
+    };
     App = __decorate([
         angular2_1.Component({ selector: 'app' }),
-        angular2_1.View({ template: '<h1>Hello {{ name }}</h1>' }),
+        angular2_1.View({ template: '<h1>{{ message }}</h1><br><p>Stage: {{ stage }}</p><br><input (keyup)="advance()">' }),
         router_1.RouteConfig([
             { path: '/', redirectTo: '/authentication' },
             { path: '/authentication', component: authentication_1.Authentication, as: 'authentication' },

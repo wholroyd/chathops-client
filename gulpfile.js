@@ -1,146 +1,349 @@
-/**
- * Created by William.Holroyd on 7/4/2015.
- */
+'use strict';
 
-// This was borrowed from the chathops-ui project and has not been modified for this project/repository
-// There are more things for Angular2 and TypeScript that can be found in:
-// https://github.com/AngularShowcase/angular2-sample-app/blob/master/gulpfile.js
+var gulp = require('gulp');
+var bump = require('gulp-bump');
+var concat = require('gulp-concat');
+var filter = require('gulp-filter');
+var inject = require('gulp-inject');
+var minifyCSS = require('gulp-minify-css');
+var minifyHTML = require('gulp-minify-html');
+var plumber = require('gulp-plumber');
+var sourcemaps = require('gulp-sourcemaps');
+var template = require('gulp-template');
+var tsc = require('gulp-typescript');
+var uglify = require('gulp-uglify');
+var watch = require('gulp-watch');
 
+var Builder = require('systemjs-builder');
+var del = require('del');
+var fs = require('fs');
+var join = require('path').join;
+var runSequence = require('run-sequence');
+var semver = require('semver');
+var series = require('stream-series');
 
-var gulp = require('gulp'),
-    usemin = require('gulp-usemin'),
-    concat = require('gulp-concat'),
-    connect = require('gulp-connect'),
-    less = require('gulp-less'),
-    minifyHTML = require('gulp-minify-html'),
-    minifyCss = require('gulp-minify-css'),
-    minifyJs = require('gulp-uglify'),
-    rename = require('gulp-rename'),
-    watch = require('gulp-watch'),
-    del = require('del');
+var express = require('express');
+var serveStatic = require('serve-static');
+var openResource = require('open');
 
-var paths  = {
-    scripts: 'js/**.js',
-    images: 'img/**/*.*',
-    index: 'index.html',
-    fonts: 'fonts/**.*',
-    fonts_bower: 'bower_components/**/*.{ttf,woff,eof,svg}',
-    styles: 'less/*.less',
-    styles_theme: 'less/themes/*.less',
-    styles_bower: 'bower_components/**/*.css'
+// --------------
+// Configuration.
+var APP_BASE = '/';
+
+var PATH = {
+    dest: {
+        all: 'dist',
+        dev: {
+            all: 'dist/dev',
+            lib: 'dist/dev/lib',
+            ng2: 'dist/dev/lib/angular2.js',
+            router: 'dist/dev/lib/router.js'
+        },
+        prod: {
+            all: 'dist/prod',
+            lib: 'dist/prod/lib'
+        }
+    },
+    src: {
+        // Order is quite important here for the HTML tag injection.
+        lib: [
+            './node_modules/angular2/node_modules/traceur/bin/traceur-runtime.js',
+            './node_modules/es6-module-loader/dist/es6-module-loader-sans-promises.js',
+            './node_modules/es6-module-loader/dist/es6-module-loader-sans-promises.js.map',
+            './node_modules/reflect-metadata/Reflect.js',
+            './node_modules/reflect-metadata/Reflect.js.map',
+            './node_modules/systemjs/dist/system.src.js',
+            './node_modules/angular2/node_modules/zone.js/dist/zone.js'
+        ]
+    }
 };
 
-/*
- * Serve the files out of /dist
- */
-gulp.task('connect', function () {
-    connect.server({
-        root: 'dist',
-        livereload: true,
-        port: 8888
+var ng2Builder = new Builder({
+    paths: {
+        'angular2/*': 'node_modules/angular2/es6/dev/*.js',
+        rx: 'node_modules/angular2/node_modules/rx/dist/rx.js'
+    },
+    meta: {
+        rx: {
+            format: 'cjs'
+        }
+    }
+});
+
+var appProdBuilder = new Builder({
+    baseURL: 'file:///' + __dirname + '/tmp',
+    meta: {
+        'angular2/angular2': { build: false },
+        'angular2/router': { build: false }
+    }
+});
+
+var HTMLMinifierOpts = { conditionals: true };
+
+var tsProject = tsc.createProject('tsconfig.json', {
+    typescript: require('typescript')
+});
+
+var semverReleases = ['major', 'premajor', 'minor', 'preminor', 'patch',
+    'prepatch', 'prerelease'];
+
+var port = 5555;
+
+// --------------
+// Clean.
+
+gulp.task('clean', function (done) {
+    del(PATH.dest.all, done);
+});
+
+gulp.task('clean.dev', function (done) {
+    del(PATH.dest.dev.all, done);
+});
+
+gulp.task('clean.app.dev', function (done) {
+    // TODO: rework this part.
+    del([join(PATH.dest.dev.all, '**/*'), '!' +
+    PATH.dest.dev.lib, '!' + join(PATH.dest.dev.lib, '*')], done);
+});
+
+gulp.task('clean.prod', function (done) {
+    del(PATH.dest.prod.all, done);
+});
+
+gulp.task('clean.app.prod', function (done) {
+    // TODO: rework this part.
+    del([join(PATH.dest.prod.all, '**/*'), '!' +
+    PATH.dest.prod.lib, '!' + join(PATH.dest.prod.lib, '*')], done);
+});
+
+gulp.task('clean.tmp', function(done) {
+    del('./tmp', done);
+});
+
+// --------------
+// Build dev.
+
+gulp.task('build.ng2.dev', function () {
+    ng2Builder.build('angular2/router', PATH.dest.dev.router, {});
+    return ng2Builder.build('angular2/angular2', PATH.dest.dev.ng2, {});
+});
+
+gulp.task('build.lib.dev', ['build.ng2.dev'], function () {
+    return gulp.src(PATH.src.lib)
+        .pipe(gulp.dest(PATH.dest.dev.lib));
+});
+
+gulp.task('build.js.dev', function () {
+    var result = gulp.src('./app/**/*ts')
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        .pipe(tsc(tsProject));
+
+    return result.js
+        .pipe(sourcemaps.write())
+        .pipe(template(templateLocals()))
+        .pipe(gulp.dest(PATH.dest.dev.all));
+});
+
+gulp.task('build.assets.dev', ['build.js.dev'], function () {
+    return gulp.src(['./app/**/*.html', './app/**/*.css'])
+        .pipe(gulp.dest(PATH.dest.dev.all));
+});
+
+gulp.task('build.index.dev', function() {
+    var target = gulp.src(injectableDevAssetsRef(), { read: false });
+    return gulp.src('./app/index.html')
+        .pipe(inject(target, { transform: transformPath('dev') }))
+        .pipe(template(templateLocals()))
+        .pipe(gulp.dest(PATH.dest.dev.all));
+});
+
+gulp.task('build.app.dev', function (done) {
+    runSequence('clean.app.dev', 'build.assets.dev', 'build.index.dev', done);
+});
+
+gulp.task('build.dev', function (done) {
+    runSequence('clean.dev', 'build.lib.dev', 'build.app.dev', done);
+});
+
+// --------------
+// Build prod.
+
+gulp.task('build.ng2.prod', function () {
+    ng2Builder.build('angular2/router', join('tmp', 'router.js'), {});
+    return ng2Builder.build('angular2/angular2', join('tmp', 'angular2.js'), {});
+});
+
+gulp.task('build.lib.prod', ['build.ng2.prod'], function () {
+    var jsOnly = filter('**/*.js');
+    var lib = gulp.src(PATH.src.lib);
+    var ng2 = gulp.src('tmp/angular2.js');
+    var router = gulp.src('tmp/router.js');
+
+    return series(lib, ng2, router)
+        .pipe(jsOnly)
+        .pipe(concat('lib.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest(PATH.dest.prod.lib));
+});
+
+gulp.task('build.js.tmp', function () {
+    var result = gulp.src(['./app/**/*.ts', '!./app/init.ts'])
+        .pipe(plumber())
+        .pipe(tsc(tsProject));
+
+    return result.js
+        .pipe(template({ VERSION: getVersion() }))
+        .pipe(gulp.dest('./tmp'));
+});
+
+// TODO: gives me crap about...
+// [Error: ENOENT, open 'c:\Source\chathops-client\tmp\components\authentication\authentication']
+// TODO: add inline source maps (System only generate separate source maps file).
+gulp.task('build.js.prod', ['build.js.tmp'], function() {
+    return appProdBuilder.build('app.js', join(PATH.dest.prod.all, 'app.js'),
+        { minify: true }).catch(function (e) { console.log(e); });
+});
+
+gulp.task('build.init.prod', function() {
+    var result = gulp.src('./app/init.ts')
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        .pipe(tsc(tsProject));
+
+    return result.js
+        .pipe(uglify())
+        .pipe(template(templateLocals()))
+        .pipe(sourcemaps.write())
+        .pipe(gulp.dest(PATH.dest.prod.all));
+});
+
+gulp.task('build.assets.prod', ['build.js.prod'], function () {
+    var filterHTML = filter('**/*.html');
+    var filterCSS = filter('**/*.css');
+    return gulp.src(['./app/**/*.html', './app/**/*.css'])
+        .pipe(filterHTML)
+        .pipe(minifyHTML(HTMLMinifierOpts))
+        .pipe(filterHTML.restore())
+        .pipe(filterCSS)
+        .pipe(minifyCSS())
+        .pipe(filterCSS.restore())
+        .pipe(gulp.dest(PATH.dest.prod.all));
+});
+
+gulp.task('build.index.prod', function() {
+    var target = gulp.src([join(PATH.dest.prod.lib, 'lib.js'),
+        join(PATH.dest.prod.all, '**/*.css')], { read: false });
+    return gulp.src('./app/index.html')
+        .pipe(inject(target, { transform: transformPath('prod') }))
+        .pipe(template(templateLocals()))
+        .pipe(gulp.dest(PATH.dest.prod.all));
+});
+
+gulp.task('build.app.prod', function (done) {
+    // build.init.prod does not work as sub tasks dependencies so placed it here.
+    runSequence('clean.app.prod', 'build.init.prod', 'build.assets.prod',
+        'build.index.prod', 'clean.tmp', done);
+});
+
+gulp.task('build.prod', function (done) {
+    runSequence('clean.prod', 'build.lib.prod', 'clean.tmp', 'build.app.prod',
+        done);
+});
+
+// --------------
+// Version.
+
+registerBumpTasks();
+
+gulp.task('bump.reset', function() {
+    return gulp.src('package.json')
+        .pipe(bump({ version: '0.0.0' }))
+        .pipe(gulp.dest('./'));
+});
+
+// --------------
+// Test.
+
+// To be implemented.
+
+// --------------
+// Serve dev.
+
+gulp.task('serve.dev', ['build.dev'], function () {
+    watch('./app/**', function () {
+        gulp.start('build.app.dev');
     });
+
+    serveSPA('dev');
 });
 
-/*
- * Reload the web server
- */
-gulp.task('livereload', function () {
-    gulp.src('index.html')
-        .pipe(connect.reload());
+// --------------
+// Serve prod.
+
+gulp.task('serve.prod', ['build.prod'], function () {
+    watch('./app/**', function () {
+        gulp.start('build.app.prod');
+    });
+
+    serveSPA('prod');
 });
 
-/*
- * Cleans the distribution directory
- */
-gulp.task('clean', ['clean-css', 'clean-images', 'clean-fonts', 'clean-dist']);
+// --------------
+// Utils.
 
-gulp.task('clean-css', function (cb) {
-    del('dist/css/*', cb);
-});
+function transformPath(env) {
+    var v = '?v=' + getVersion();
+    return function (filepath) {
+        arguments[0] = filepath.replace('/' + PATH.dest[env].all + '/', APP_BASE) + v;
+        return inject.transform.apply(inject.transform, arguments);
+    };
+}
 
-gulp.task('clean-images', function (cb) {
-    del('dist/img/*', cb);
-});
+function injectableDevAssetsRef() {
+    var src = PATH.src.lib.map(function(path) {
+        return join(PATH.dest.dev.lib, path.split('/').pop());
+    });
+    src.push(PATH.dest.dev.ng2, PATH.dest.dev.router,
+        join(PATH.dest.dev.all, '**/*.css'));
+    return src;
+}
 
-gulp.task('clean-fonts', function (cb) {
-    del('dist/fonts/*', cb);
-});
+function getVersion(){
+    var pkg = JSON.parse(fs.readFileSync('package.json'));
+    return pkg.version;
+}
 
-gulp.task('clean-dist', function (cb) {
-    del('dist/*', cb);
-});
+function templateLocals() {
+    return {
+        VERSION: getVersion(),
+        APP_BASE: APP_BASE
+    };
+}
 
-/*
- * Copy fonts to dist directory
- */
+function registerBumpTasks() {
+    semverReleases.forEach(function (release) {
+        var semverTaskName = 'semver.' + release;
+        var bumpTaskName = 'bump.' + release;
+        gulp.task(semverTaskName, function() {
+            var version = semver.inc(getVersion(), release);
+            return gulp.src('package.json')
+                .pipe(bump({ version: version }))
+                .pipe(gulp.dest('./'));
+        });
+        gulp.task(bumpTaskName, function(done) {
+            runSequence(semverTaskName, 'build.app.prod', done);
+        });
+    });
+}
 
-gulp.task('copy-assets', ['copy-index', 'copy-images', 'copy-fonts']);
-
-gulp.task('copy-index', function () {
-    return gulp.src(paths.index)
-        .pipe(gulp.dest('dist'));
-});
-
-gulp.task('copy-images', function () {
-    return gulp.src(paths.images)
-        .pipe(gulp.dest('dist/img'));
-});
-
-gulp.task('copy-fonts', function () {
-    gulp.src(paths.fonts)
-        .pipe(gulp.dest('dist/fonts'));
-
-    return gulp.src(paths.fonts_bower)
-        .pipe(gulp.dest('dist/fonts'));
-});
-
-/**
- * Compile less
- */
-gulp.task('less', function () {
-    gulp.src(paths.styles)
-        .pipe(less())
-        .pipe(concat('chathops-base.css'))
-        .pipe(gulp.dest('dist/css'));
-
-    gulp.src(paths.styles_theme)
-        .pipe(less())
-        .pipe(gulp.dest('dist/css'));
-
-    return gulp.src('dist/css/chathops-base.css')
-        .pipe(minifyCss())
-        .pipe(rename('chathops-base.min.css'))
-        .pipe(gulp.dest('dist/css/'));
-});
-
-gulp.task('usemin', function () {
-    return gulp.src(paths.index)
-        .pipe(usemin({
-            js: [minifyJs(), 'concat'],
-            css: [minifyCss({
-                keepSpecialComments: 0
-            }), 'concat'],
-        }))
-        .pipe(gulp.dest('dist/'));
-});
-
-/*
- * Watch src and execute tasks when changes are made
- */
-gulp.task('watch', function () {
-    gulp.watch([paths.fonts], ['copy-fonts', 'livereload']);
-    gulp.watch([paths.fonts_bower], ['copy-fonts']);
-    gulp.watch([paths.index], ['usemin', 'livereload']);
-    gulp.watch([paths.scripts], ['usemin', 'livereload']);
-    gulp.watch([paths.styles], ['less', 'usemin', 'livereload']);
-    gulp.watch([paths.styles_theme], ['less', 'usemin', 'livereload']);
-    gulp.watch([paths.styles_bower], ['less', 'usemin', 'livereload']);
-    gulp.watch([paths.images], ['copy-images', 'livereload']);
-});
-
-/*
- * Copy assets and compile less.
- */
-gulp.task('build', ['less', 'usemin', 'copy-assets']);
-
-gulp.task('default', ['build', 'connect', 'livereload', 'watch']);
+function serveSPA(env) {
+    var app;
+    app = express().use(serveStatic(join(__dirname, PATH.dest[env].all)));
+    app.all('*', function (req, res, next) {
+        res.sendFile(join(__dirname, PATH.dest[env].all, 'index.html'));
+    });
+    app.listen(port, function () {
+        openResource('http://localhost:' + port);
+    });
+}

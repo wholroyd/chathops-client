@@ -29,7 +29,7 @@ electron.on('ready', function () {
         frame: true
     });
 
-    mainWindow.loadUrl(__dirname + '/src/index.html');
+    mainWindow.loadUrl(__dirname + '/app/index.html');
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function () {
