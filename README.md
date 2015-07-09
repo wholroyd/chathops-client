@@ -41,11 +41,12 @@ To get everything running on your machine...
 1. npm install
 2. npm install gulp -g
 3. npm install bower -g
-4. npm install electron -g
-5. npm install typescript -g
-6. npm install tsd -g
-7. bower install
-8. tsd install
+4. npm install electron-prebuilt -g
+5. npm install electron-packager -g
+6. npm install typescript -g
+7. npm install tsd -g
+8. bower install
+9. tsd install
 
 To verify everything should be working...
 

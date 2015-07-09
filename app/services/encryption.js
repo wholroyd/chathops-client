@@ -4,6 +4,10 @@ var crypto = require("crypto");
 var Encryption = (function () {
     function Encryption(password) {
         this.algorithm = 'aes-256-ctr';
+        // If we don't check this, we get cipher text with no known password to decrypt it
+        if (!password) {
+            throw new EncryptionException("You must pass a known password with a length greater than 0.");
+        }
         this.password = password;
     }
     Encryption.prototype.encrypt = function (text) {
@@ -21,4 +25,11 @@ var Encryption = (function () {
     return Encryption;
 })();
 exports.Encryption = Encryption;
+var EncryptionException = (function () {
+    function EncryptionException(message) {
+        this.message = message;
+    }
+    return EncryptionException;
+})();
+exports.EncryptionException = EncryptionException;
 //# sourceMappingURL=encryption.js.map

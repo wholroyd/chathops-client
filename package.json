@@ -5,14 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/app.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/chathops/chathops-client"
   },
   "author": "ChatHops contributors",
-  "license": "Apache License 2.0",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/chathops/chathops-client/issues"
   },
@@ -28,6 +28,8 @@
   "devDependencies": {
     "chai": "^3.0.0",
     "del": "^1.2.0",
+    "electron-packager": "^5.0.1",
+    "electron-prebuilt": "^0.29.2",
     "express": "^4.13.1",
     "gulp": "^3.9.0",
     "gulp-bump": "^0.3.1",
@@ -55,6 +57,7 @@
     "stream-series": "^0.1.1",
     "systemjs-builder": "^0.12.2",
     "tsd": "^0.6.3",
+    "tsunit.external": "^1.8.0",
     "typescript": "^1.5.0-beta"
   }
 }

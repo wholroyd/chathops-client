@@ -4,11 +4,15 @@
 import crypto = require("crypto");
 
 export class Encryption {
-    algorithm : string;
+    algorithm = 'aes-256-ctr';
+
     password : string;
 
     constructor(password: string) {
-        this.algorithm = 'aes-256-ctr';
+        // If we don't check this, we get cipher text with no known password to decrypt it
+        if (!password) {
+            throw new EncryptionException("You must pass a known password with a length greater than 0.")
+        }
         this.password = password;
     }
 
@@ -24,5 +28,13 @@ export class Encryption {
         var decrypted = decipher.update(text,'hex','utf8');
         decrypted += decipher.final('utf8');
         return decrypted;
+    }
+}
+
+export class EncryptionException {
+    message: string;
+
+    constructor(message: string) {
+        this.message = message;
     }
 }

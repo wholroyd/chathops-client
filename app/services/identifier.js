@@ -22,7 +22,7 @@ var Identifier = (function () {
         var uid = Object.keys(fingerprint).join("");
         uid += os.totalmem();
         uid += os.cpus().map(function (cpu) { return cpu.model; }).join(":");
-        return crypto.createHash("md5").update(uid).digest("HEX");
+        return crypto.createHash("md5").update(uid).digest("hex");
     };
     return Identifier;
 })();
