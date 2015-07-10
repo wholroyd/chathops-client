@@ -3,6 +3,12 @@
 
 This is the client interface that users will experience on the web, desktop, or devices.
 
+| Branch | Status |
+| ------ | ------ |
+| Master | ![Travis CI master branch build status](https://travis-ci.org/chathops/chathops-client.svg?branch=master) |
+| Develop | ![Travis CI develop branch build status](https://travis-ci.org/chathops/chathops-client.svg?branch=develop) |
+
+
 ## Architecture
 
 The client app will utilize Angular2 - which is not production ready just yet, but is really close. While Express is 
@@ -29,30 +35,37 @@ We intend to focus on all modern browsers like Chrome, Firefox, Opera, Edge, and
 
 The directory layout should be self-explanatory, however the entry point into it may not be very clear.
 
-- server-hosted.js - This is used if you want to run the client on a web server, accessed through a browser.
-- server-client.js - This is used if you want to run the client using the Electron shell.
+- `server-hosted.js` - This is used if you want to run the client on a web server, accessed through a browser.
+- `server-client.js` - This is used if you want to run the client using the Electron shell.
 
 The server-hosted.js file is not used when hosted on chathops.io because the index.js within src is loaded as a module 
 by an upper level Express app that loads it as a child app. Neither of the files are used in development as we're using 
 gulp-watch.
 
-To get everything running on your machine...
+### Requirements...
 
-1. npm install
-2. npm install gulp -g
-3. npm install bower -g
-4. npm install electron-prebuilt -g
-5. npm install electron-packager -g
-6. npm install typescript -g
-7. npm install tsd -g
-8. bower install
-9. tsd install
+> You may notice that use TSD for TypeScript definitions of libraries written in JavaScript (via the typings directory), but we won't call it until Angular2 and TypeScript 1.5 (final) are released because we have some local fixes that aren't available and would get overwrote by using the tool. We will also use Electron to ship the desktop clients (eventually), but it's not hooked up to Gulp yet at this point.
 
-To verify everything should be working...
+1. `npm install`
+2. `npm install gulp -g`
+3. `npm install bower -g`
+4. `npm install electron-prebuilt -g`
+5. `npm install electron-packager -g`
+6. `npm install typescript -g`
+7. `bower install`
 
-1. gulp build
-2. node test
+#### To verify everything should be working...
 
-To keep an eye on everything while developing...
+- `node test`
 
-- gulp
+To create development distribution...
+
+- `gulp build.dev`
+
+To create production distribution...
+
+- `gulp build.prod`
+
+To just keep an eye on everything while actively developing...
+
+- `gulp`
