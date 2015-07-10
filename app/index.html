@@ -1,14 +1,36 @@
 <html>
 <head>
     <title>ChatHops</title>
-    <script src="https://github.jspm.io/jmcriffey/bower-traceur-runtime@0.0.87/traceur-runtime.js"></script>
-    <script src="https://jspm.io/system@0.16.js"></script>
-    <script src="https://code.angularjs.org/2.0.0-alpha.28/angular2.dev.js"></script>
 </head>
 <body>
 
-<app></app>
-<script>System.import('app');</script>
+<app>Loading...</app>
+
+<script src="/lib/traceur-runtime.js"></script>
+<script src="/lib/system.js"></script>
+<script src="/lib/reflect.js"></script>
+<script src="/lib/zone.js"></script>
+<script src="/lib/long-stack-trace-zone.js"></script>
+<script src="/lib/rx.js"></script>
+<script>
+    System.defaultJSExtensions = true;
+    System.config({
+        paths: {
+            'angular2/*': '/lib/angular2/*'
+        },
+        meta: {
+            '/lib/rx.js': {
+                format: 'cjs'
+            }
+        },
+        map: {
+            rx: '/lib/rx.js'
+        }
+    });
+    System.import('/app/bootstrap').catch(
+            console.error.bind(console)
+    );
+</script>
 
 </body>
 </html>

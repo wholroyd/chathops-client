@@ -1,15 +1,15 @@
-/// <reference path="../typings/angular2/angular2.d.ts" />
-/// <reference path="../typings/custom.router.d.ts" />
+/// <reference path="../../typings/angular2/angular2.d.ts" />
+/// <reference path="../../typings/custom.router.d.ts" />
 
-import {Component, View, bootstrap} from 'angular2/angular2';
+import {Component, View} from 'angular2/angular2';
 import {Router, RouteConfig, routerDirectives, routerInjectables} from 'angular2/router';
 
-import {Authentication} from './components/authentication/authentication';
-import {Conversations} from './components/conversations/conversations';
-import {Platforms} from './components/platforms/platforms';
-import {Settings} from './components/settings/settings';
-import {Profile} from './components/profile/profile';
-import {Manage} from './components/manage/manage';
+import {Authentication} from './authentication/authentication';
+import {Conversations} from './conversations/conversations';
+import {Platforms} from './platforms/platforms';
+import {Settings} from './settings/settings';
+import {Profile} from './profile/profile';
+import {Manage} from './manage/manage';
 
 @Component({ selector: 'app' })
 @View({ template: '<h1>{{ message }}</h1><br><p>Stage: {{ stage }}</p><br><input (keyup)="advance()">' })
@@ -19,7 +19,7 @@ import {Manage} from './components/manage/manage';
     { path: '/manage', component: Manage, as: 'manage' },
     { path: '/settings', component: Settings, as: 'settings' },
 ])
-class App {
+export class App {
     message: string;
     stage: number;
 
@@ -43,5 +43,3 @@ class App {
         this.stage++;
     }
 }
-
-bootstrap(App);

@@ -22,7 +22,9 @@
     "es6-module-loader": "^0.17.3",
     "express": "^4.12.4",
     "reflect-metadata": "^0.1.0",
+    "rx": "^2.5.3",
     "systemjs": "^0.18.4",
+    "traceur": "0.0.90",
     "zone.js": "^0.5.2"
   },
   "devDependencies": {
@@ -32,7 +34,9 @@
     "electron-prebuilt": "^0.29.2",
     "express": "^4.13.1",
     "gulp": "^3.9.0",
+    "gulp-autoprefixer": "^2.3.1",
     "gulp-bump": "^0.3.1",
+    "gulp-changed": "^1.2.1",
     "gulp-concat": "^2.6.0",
     "gulp-connect": "^2.2.0",
     "gulp-filter": "^2.0.2",
@@ -47,17 +51,22 @@
     "gulp-typescript": "^2.7.8",
     "gulp-uglify": "^1.2.0",
     "gulp-usemin": "^0.3.11",
+    "gulp-util": "^3.0.6",
     "gulp-watch": "^4.2.4",
     "karma": "^0.12.37",
     "mocha": "^2.2.5",
+    "object-assign": "^3.0.0",
     "open": "0.0.5",
     "run-sequence": "^1.1.1",
     "semver": "^4.3.6",
     "serve-static": "^1.10.0",
+    "source-map-url": "^0.3.0",
     "stream-series": "^0.1.1",
     "systemjs-builder": "^0.12.2",
+    "through2": "^2.0.0",
     "tsd": "^0.6.3",
     "tsunit.external": "^1.8.0",
-    "typescript": "^1.5.0-beta"
+    "typescript": "^1.5.0-beta",
+    "vinyl-sourcemaps-apply": "^0.1.4"
   }
 }

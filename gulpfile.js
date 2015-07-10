@@ -3,6 +3,7 @@
 var gulp = require('gulp');
 var bump = require('gulp-bump');
 var concat = require('gulp-concat');
+var changed = require('gulp-changed');
 var filter = require('gulp-filter');
 var inject = require('gulp-inject');
 var minifyCSS = require('gulp-minify-css');
@@ -14,71 +15,45 @@ var tsc = require('gulp-typescript');
 var uglify = require('gulp-uglify');
 var watch = require('gulp-watch');
 
-var Builder = require('systemjs-builder');
 var del = require('del');
 var fs = require('fs');
 var join = require('path').join;
 var runSequence = require('run-sequence');
 var semver = require('semver');
-var series = require('stream-series');
-
+var childProcess = require('child_process');
 var express = require('express');
 var serveStatic = require('serve-static');
 var openResource = require('open');
 
+var packageJson = require('./package.json');
+var ng = require('./build/ng');
+
 // --------------
 // Configuration.
-var APP_BASE = '/';
 
-var PATH = {
-    dest: {
-        all: 'dist',
-        dev: {
-            all: 'dist/dev',
-            lib: 'dist/dev/lib',
-            ng2: 'dist/dev/lib/angular2.js',
-            router: 'dist/dev/lib/router.js'
-        },
-        prod: {
-            all: 'dist/prod',
-            lib: 'dist/prod/lib'
-        }
-    },
-    src: {
-        // Order is quite important here for the HTML tag injection.
-        lib: [
-            './node_modules/angular2/node_modules/traceur/bin/traceur-runtime.js',
-            './node_modules/es6-module-loader/dist/es6-module-loader-sans-promises.js',
-            './node_modules/es6-module-loader/dist/es6-module-loader-sans-promises.js.map',
-            './node_modules/reflect-metadata/Reflect.js',
-            './node_modules/reflect-metadata/Reflect.js.map',
-            './node_modules/systemjs/dist/system.src.js',
-            './node_modules/angular2/node_modules/zone.js/dist/zone.js'
-        ]
+var spawn = childProcess.spawn;
+var server;
+
+var PATHS = {
+    dist: 'dist',
+    distClient: 'dist/client',
+    distLib: 'dist/lib',
+    lib: [
+        'node_modules/traceur/bin/traceur-runtime.js',
+        '!node_modules/systemjs/dist/*.src.js',
+        'node_modules/systemjs/dist/*.js',
+        'node_modules/reflect-metadata/Reflect.js',
+        'node_modules/zone.js/dist/zone.js',
+        'node_modules/zone.js/dist/long-stack-trace-zone.js',
+        'node_modules/rx/dist/rx.js'
+    ],
+    client: {
+        ts: ['app/**/*.ts'],
+        html: 'app/**/*.html',
+        css: 'app/**/*.css',
+        static: 'app/**/*.{svg,jpg,png,ico}'
     }
 };
-
-var ng2Builder = new Builder({
-    paths: {
-        'angular2/*': 'node_modules/angular2/es6/dev/*.js',
-        rx: 'node_modules/angular2/node_modules/rx/dist/rx.js'
-    },
-    meta: {
-        rx: {
-            format: 'cjs'
-        }
-    }
-});
-
-var appProdBuilder = new Builder({
-    baseURL: 'file:///' + __dirname + '/tmp',
-    meta: {
-        'angular2/angular2': { build: false },
-        'angular2/router': { build: false }
-    }
-});
-
-var HTMLMinifierOpts = { conditionals: true };
 
 var tsProject = tsc.createProject('tsconfig.json', {
     typescript: require('typescript')
@@ -87,172 +62,82 @@ var tsProject = tsc.createProject('tsconfig.json', {
 var semverReleases = ['major', 'premajor', 'minor', 'preminor', 'patch',
     'prepatch', 'prerelease'];
 
-var port = 5555;
+var port = 8080;
 
 // --------------
-// Clean.
+// Tasks.
 
 gulp.task('clean', function (done) {
     del(PATH.dest.all, done);
 });
 
-gulp.task('clean.dev', function (done) {
-    del(PATH.dest.dev.all, done);
+gulp.task('angular2', function() {
+    return ng.build(
+        [
+            '!node_modules/angular2/es6/prod/angular2_sfx.js',
+            '!node_modules/angular2/es6/prod/angular2.api.js',
+            '!node_modules/angular2/es6/prod/es5build.js',
+            '!node_modules/angular2/es6/prod/src/debug/**/*',
+            '!node_modules/angular2/es6/prod/src/mock/**/*',
+            '!node_modules/angular2/es6/prod/src/test_lib/**/*',
+            'node_modules/angular2/es6/prod/**/*.js'
+        ],
+        PATHS.distLib + '/angular2', {
+            namespace: 'angular2',
+            traceurOptions: {}
+        }
+    );
 });
 
-gulp.task('clean.app.dev', function (done) {
-    // TODO: rework this part.
-    del([join(PATH.dest.dev.all, '**/*'), '!' +
-    PATH.dest.dev.lib, '!' + join(PATH.dest.dev.lib, '*')], done);
+gulp.task('libs', ['tsd', 'angular2'], function() {
+    return gulp
+        .src(PATHS.lib)
+        .pipe(gulp.dest(PATHS.distLib));
 });
 
-gulp.task('clean.prod', function (done) {
-    del(PATH.dest.prod.all, done);
-});
-
-gulp.task('clean.app.prod', function (done) {
-    // TODO: rework this part.
-    del([join(PATH.dest.prod.all, '**/*'), '!' +
-    PATH.dest.prod.lib, '!' + join(PATH.dest.prod.lib, '*')], done);
-});
-
-gulp.task('clean.tmp', function(done) {
-    del('./tmp', done);
-});
-
-// --------------
-// Build dev.
-
-gulp.task('build.ng2.dev', function () {
-    ng2Builder.build('angular2/router', PATH.dest.dev.router, {});
-    return ng2Builder.build('angular2/angular2', PATH.dest.dev.ng2, {});
-});
-
-gulp.task('build.lib.dev', ['build.ng2.dev'], function () {
-    return gulp.src(PATH.src.lib)
-        .pipe(gulp.dest(PATH.dest.dev.lib));
-});
-
-gulp.task('build.js.dev', function () {
-    var result = gulp.src('./app/**/*ts')
+gulp.task('ts', function() {
+    return gulp
+        .src([].concat(PATHS.typings, PATHS.client.ts)) // instead of gulp.src(...), project.src() can be used
+        .pipe(changed(PATHS.distClient, {
+            extension: '.js'
+        }))
         .pipe(plumber())
         .pipe(sourcemaps.init())
-        .pipe(tsc(tsProject));
-
-    return result.js
-        .pipe(sourcemaps.write())
-        .pipe(template(templateLocals()))
-        .pipe(gulp.dest(PATH.dest.dev.all));
+        .pipe(ts(tsProject))
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest(PATHS.distClient));
 });
 
-gulp.task('build.assets.dev', ['build.js.dev'], function () {
-    return gulp.src(['./app/**/*.html', './app/**/*.css'])
-        .pipe(gulp.dest(PATH.dest.dev.all));
+gulp.task('html', function() {
+    return gulp
+        .src(PATHS.client.html)
+        .pipe(changed(PATHS.distClient))
+        .pipe(gulp.dest(PATHS.distClient));
 });
 
-gulp.task('build.index.dev', function() {
-    var target = gulp.src(injectableDevAssetsRef(), { read: false });
-    return gulp.src('./app/index.html')
-        .pipe(inject(target, { transform: transformPath('dev') }))
-        .pipe(template(templateLocals()))
-        .pipe(gulp.dest(PATH.dest.dev.all));
-});
-
-gulp.task('build.app.dev', function (done) {
-    runSequence('clean.app.dev', 'build.assets.dev', 'build.index.dev', done);
-});
-
-gulp.task('build.dev', function (done) {
-    runSequence('clean.dev', 'build.lib.dev', 'build.app.dev', done);
-});
-
-// --------------
-// Build prod.
-
-gulp.task('build.ng2.prod', function () {
-    ng2Builder.build('angular2/router', join('tmp', 'router.js'), {});
-    return ng2Builder.build('angular2/angular2', join('tmp', 'angular2.js'), {});
-});
-
-gulp.task('build.lib.prod', ['build.ng2.prod'], function () {
-    var jsOnly = filter('**/*.js');
-    var lib = gulp.src(PATH.src.lib);
-    var ng2 = gulp.src('tmp/angular2.js');
-    var router = gulp.src('tmp/router.js');
-
-    return series(lib, ng2, router)
-        .pipe(jsOnly)
-        .pipe(concat('lib.js'))
-        .pipe(uglify())
-        .pipe(gulp.dest(PATH.dest.prod.lib));
-});
-
-gulp.task('build.js.tmp', function () {
-    var result = gulp.src(['./app/**/*.ts', '!./app/init.ts'])
-        .pipe(plumber())
-        .pipe(tsc(tsProject));
-
-    return result.js
-        .pipe(template({ VERSION: getVersion() }))
-        .pipe(gulp.dest('./tmp'));
-});
-
-// TODO: gives me crap about...
-// [Error: ENOENT, open 'c:\Source\chathops-client\tmp\components\authentication\authentication']
-// TODO: add inline source maps (System only generate separate source maps file).
-gulp.task('build.js.prod', ['build.js.tmp'], function() {
-    return appProdBuilder.build('app.js', join(PATH.dest.prod.all, 'app.js'),
-        { minify: true }).catch(function (e) { console.log(e); });
-});
-
-gulp.task('build.init.prod', function() {
-    var result = gulp.src('./app/init.ts')
+gulp.task('css', function() {
+    return gulp
+        .src(PATHS.client.css)
+        .pipe(changed(PATHS.distClient, {
+            extension: '.css'
+        }))
         .pipe(plumber())
         .pipe(sourcemaps.init())
-        .pipe(tsc(tsProject));
-
-    return result.js
-        .pipe(uglify())
-        .pipe(template(templateLocals()))
-        .pipe(sourcemaps.write())
-        .pipe(gulp.dest(PATH.dest.prod.all));
+        .pipe(autoprefixer())
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest(PATHS.distClient));
 });
 
-gulp.task('build.assets.prod', ['build.js.prod'], function () {
-    var filterHTML = filter('**/*.html');
-    var filterCSS = filter('**/*.css');
-    return gulp.src(['./app/**/*.html', './app/**/*.css'])
-        .pipe(filterHTML)
-        .pipe(minifyHTML(HTMLMinifierOpts))
-        .pipe(filterHTML.restore())
-        .pipe(filterCSS)
-        .pipe(minifyCSS())
-        .pipe(filterCSS.restore())
-        .pipe(gulp.dest(PATH.dest.prod.all));
+gulp.task('static', function() {
+    return gulp
+        .src(PATHS.client.static)
+        .pipe(changed(PATHS.distClient))
+        .pipe(gulp.dest(PATHS.distClient));
 });
 
-gulp.task('build.index.prod', function() {
-    var target = gulp.src([join(PATH.dest.prod.lib, 'lib.js'),
-        join(PATH.dest.prod.all, '**/*.css')], { read: false });
-    return gulp.src('./app/index.html')
-        .pipe(inject(target, { transform: transformPath('prod') }))
-        .pipe(template(templateLocals()))
-        .pipe(gulp.dest(PATH.dest.prod.all));
+gulp.task('bundle', function(done) {
+    runSequence('clean', 'libs', ['ts', 'html', 'css', 'static'], done);
 });
-
-gulp.task('build.app.prod', function (done) {
-    // build.init.prod does not work as sub tasks dependencies so placed it here.
-    runSequence('clean.app.prod', 'build.init.prod', 'build.assets.prod',
-        'build.index.prod', 'clean.tmp', done);
-});
-
-gulp.task('build.prod', function (done) {
-    runSequence('clean.prod', 'build.lib.prod', 'clean.tmp', 'build.app.prod',
-        done);
-});
-
-// --------------
-// Version.
 
 registerBumpTasks();
 
@@ -262,63 +147,51 @@ gulp.task('bump.reset', function() {
         .pipe(gulp.dest('./'));
 });
 
+gulp.task('server:restart', function(done) {
+    var started = false;
+    if (server) {
+        server.kill();
+    }
+    server = spawn('node', [packageJson.main]);
+    server.stdout.on('data', function(data) {
+        console.log(data.toString());
+        if (started === false) {
+            started = true;
+            done();
+        }
+    });
+    server.stderr.on('data', function(data) {
+        console.error(data.toString());
+    });
+});
+
+process.on('exit', function() {
+    if (server) {
+        server.kill();
+    }
+});
+
+gulp.task('play', ['bundle', 'server:restart'], function() {
+    gulp.watch(PATHS.client.ts, ['ts']);
+    gulp.watch(PATHS.client.html, ['html']);
+    gulp.watch(PATHS.client.css, ['css']);
+    gulp.watch(PATHS.client.static, ['static']);
+    gulp.watch(packageJson.main, ['server:restart']);
+});
+
+gulp.task('default', ['bundle']);
+
 // --------------
 // Test.
 
 // To be implemented.
 
 // --------------
-// Serve dev.
-
-gulp.task('serve.dev', ['build.dev'], function () {
-    watch('./app/**', function () {
-        gulp.start('build.app.dev');
-    });
-
-    serveSPA('dev');
-});
-
-// --------------
-// Serve prod.
-
-gulp.task('serve.prod', ['build.prod'], function () {
-    watch('./app/**', function () {
-        gulp.start('build.app.prod');
-    });
-
-    serveSPA('prod');
-});
-
-// --------------
 // Utils.
-
-function transformPath(env) {
-    var v = '?v=' + getVersion();
-    return function (filepath) {
-        arguments[0] = filepath.replace('/' + PATH.dest[env].all + '/', APP_BASE) + v;
-        return inject.transform.apply(inject.transform, arguments);
-    };
-}
-
-function injectableDevAssetsRef() {
-    var src = PATH.src.lib.map(function(path) {
-        return join(PATH.dest.dev.lib, path.split('/').pop());
-    });
-    src.push(PATH.dest.dev.ng2, PATH.dest.dev.router,
-        join(PATH.dest.dev.all, '**/*.css'));
-    return src;
-}
 
 function getVersion(){
     var pkg = JSON.parse(fs.readFileSync('package.json'));
     return pkg.version;
-}
-
-function templateLocals() {
-    return {
-        VERSION: getVersion(),
-        APP_BASE: APP_BASE
-    };
 }
 
 function registerBumpTasks() {
@@ -334,16 +207,5 @@ function registerBumpTasks() {
         gulp.task(bumpTaskName, function(done) {
             runSequence(semverTaskName, 'build.app.prod', done);
         });
-    });
-}
-
-function serveSPA(env) {
-    var app;
-    app = express().use(serveStatic(join(__dirname, PATH.dest[env].all)));
-    app.all('*', function (req, res, next) {
-        res.sendFile(join(__dirname, PATH.dest[env].all, 'index.html'));
-    });
-    app.listen(port, function () {
-        openResource('http://localhost:' + port);
     });
 }

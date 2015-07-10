@@ -8,9 +8,6 @@ if (typeof __decorate !== "function") __decorate = function (decorators, target,
         case 4: return decorators.reduceRight(function(o, d) { return (d && d(target, key, o)) || o; }, desc);
     }
 };
-if (typeof __metadata !== "function") __metadata = function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 var angular2_1 = require('angular2/angular2');
 var Authentication = (function () {
     function Authentication() {
@@ -18,8 +15,7 @@ var Authentication = (function () {
     }
     Authentication = __decorate([
         angular2_1.Component({ selector: 'authentication' }),
-        angular2_1.View({ template: "<p> {{ message }} </p>" }), 
-        __metadata('design:paramtypes', [])
+        angular2_1.View({ template: "<p> {{ message }} </p>" })
     ], Authentication);
     return Authentication;
 })();
