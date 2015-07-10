@@ -1,0 +1,12 @@
+language: node_js
+node_js:
+  - "0.12"
+before_install:
+  - "npm install"
+  - "npm install gulp -g"
+  - "npm install bower -g"
+  - "npm install electron-prebuilt -g"
+  - "npm install electron-packager -g"
+  - "npm install typescript -g"
+  - "npm install tsd -g"
+  - "bower install"
